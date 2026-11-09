@@ -57,7 +57,3 @@ L'ultimo fotogramma dell'animazione mostra il robot a fine traiettoria, con la s
 ## Controllore e traiettoria
 
 Il riferimento è una circonferenza nello spazio operativo, trasformata in traiettoria di giunto tramite la cinematica inversa e interpolata con una spline per ottenere velocità e accelerazioni. La legge di controllo è `tau = M(q)(ddq_d + Kd e' + Kp e) + C(q,dq) + G(q)`, che rende l'errore un sistema lineare asintoticamente stabile; i guadagni sono scelti per avere smorzamento critico. Il modello usato dal controllore coincide con quello del robot simulato, quindi non sono considerati attriti, saturazioni delle coppie o errori di modello.
-
-## Una versione alternativa
-
-Il file `sim_4R.m` contiene la stessa idea in un unico script, nello stile delle esercitazioni sincrone del corso: una variabile `CONTROL_MODE` permette di scegliere tra controllo nello spazio dei giunti e nello spazio operativo, e la dinamica è integrata con il metodo di Eulero invece che con `ode45`. Serve soprattutto come confronto didattico; per la consegna fa fede `main_4R`.
