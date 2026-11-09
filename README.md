@@ -32,6 +32,28 @@ Nel moto libero senza coppie l'energia totale, che parte da 6.82 J, varia al mas
 
 Con il controllore a coppia calcolata, partendo da un errore di giunto iniziale di circa 0.25 rad, il robot converge sulla circonferenza entro due secondi: dopo quel momento l'errore resta sotto 1.2e-08 rad, e a fine simulazione scende a 1.6e-11 rad sui giunti e a 5.5e-12 m sulla posizione dell'end-effector. Le coppie massime richieste sono di circa 13.4, 11.9, 3.5 e 0.5 N m per i quattro giunti, dalla base verso l'estremo.
 
+### Figure
+
+Il robot nella configurazione di test, con le cinque terne DH da `O_0` (base) a `O_4` (end-effector), è questo: l'asse x di ogni terna è in rosso e l'asse y in verde.
+
+![Cinematica diretta](results/cinematica_diretta.png)
+
+Lo stesso punto raggiunto con le due soluzioni della cinematica inversa: a sinistra il gomito basso, a destra quello alto. I due bracci finiscono nello stesso punto con lo stesso orientamento, ma con configurazioni dei primi tre giunti molto diverse.
+
+![Cinematica inversa](results/cinematica_inversa.png)
+
+Nel test di conservazione dell'energia lo scarto rispetto al valore iniziale resta intorno a 1e-8 J per tutti i tre secondi di moto libero. Le oscillazioni crescono verso la fine perché l'errore di integrazione si accumula, ma restano ben al di sotto della soglia usata nel test.
+
+![Conservazione dell'energia](results/test_energia.png)
+
+I risultati della simulazione con controllo mostrano l'andamento dei giunti, che seguono il riferimento (tratteggiato) quasi subito, l'errore che si azzera in meno di un secondo, le coppie e il confronto fra la traiettoria desiderata e quella effettiva dell'end-effector. Nel grafico in basso a destra si vede la breve rincorsa iniziale, dovuta all'errore di partenza imposto di proposito, prima che il robot si porti sulla circonferenza.
+
+![Risultati del controllo](results/risultati_controllo.png)
+
+L'ultimo fotogramma dell'animazione mostra il robot a fine traiettoria, con la scia lasciata dall'end-effector e le terne DH ancora visibili.
+
+![Fine dell'animazione](results/animazione_fine.png)
+
 ## Controllore e traiettoria
 
 Il riferimento è una circonferenza nello spazio operativo, trasformata in traiettoria di giunto tramite la cinematica inversa e interpolata con una spline per ottenere velocità e accelerazioni. La legge di controllo è `tau = M(q)(ddq_d + Kd e' + Kp e) + C(q,dq) + G(q)`, che rende l'errore un sistema lineare asintoticamente stabile; i guadagni sono scelti per avere smorzamento critico. Il modello usato dal controllore coincide con quello del robot simulato, quindi non sono considerati attriti, saturazioni delle coppie o errori di modello.

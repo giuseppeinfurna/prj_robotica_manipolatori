@@ -156,7 +156,6 @@ plot(pos(1, :), pos(2, :), 'm', 'LineWidth', 1.2);
 axis equal; grid on; xlabel('x [m]'); ylabel('y [m]');
 title('Traiettoria end-effector'); legend('desiderata', 'effettiva');
 
-if ~exist('results', 'dir'), mkdir('results'); end
 
 %% 7) Animazione
 fig = figure('Name', 'Animazione', 'Position', [150 150 700 650]);
@@ -175,16 +174,18 @@ for k = 1:step:numel(t)
     drawnow;
 end
 
+%if ~exist('results', 'dir'), mkdir('results'); end
+
 %% 8) Salvataggio delle figure in results/
-nomi = {'Cinematica diretta', 'Cinematica inversa', 'Test energia', ...
-        'Risultati controllo', 'Animazione'};
-file = {'cinematica_diretta', 'cinematica_inversa', 'test_energia', ...
-        'risultati_controllo', 'animazione_fine'};
-for i = 1:numel(nomi)
-    f = findobj('Type', 'figure', 'Name', nomi{i});
-    exportgraphics(f(1), fullfile('results', [file{i} '.png']), 'Resolution', 150);
-end
-fprintf('Figure salvate nella cartella results/\n');
+%nomi = {'Cinematica diretta', 'Cinematica inversa', 'Test energia', ...
+%        'Risultati controllo', 'Animazione'};
+%file = {'cinematica_diretta', 'cinematica_inversa', 'test_energia', ...
+%        'risultati_controllo', 'animazione_fine'};
+%for i = 1:numel(nomi)
+%    f = findobj('Type', 'figure', 'Name', nomi{i});
+%    exportgraphics(f(1), fullfile('results', [file{i} '.png']), 'Resolution', 150);
+%end
+%fprintf('Figure salvate nella cartella results/\n');
 
 %% Funzioni locali
 function tau = control_law(t, q, dq, qd_f, dqd_f, ddqd_f, Kp, Kd, params)
