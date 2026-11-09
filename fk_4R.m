@@ -1,18 +1,6 @@
 function [T, x, y, phi, Tall] = fk_4R(theta, L)
-% FK_4R  Cinematica diretta del manipolatore planare 4R (DH standard).
-%
-% Tabella DH (alpha_i = 0, d_i = 0 per tutti i giunti):
-%   i | theta_i | d_i | a_i | alpha_i
-%   1 | q1      | 0   | L1  | 0
-%   2 | q2      | 0   | L2  | 0
-%   3 | q3      | 0   | L3  | 0
-%   4 | q4      | 0   | L4  | 0
-%
-% Uscite:
-%   T    : matrice 4x4 base -> end-effector, T = A1*A2*A3*A4
-%   x, y : posizione dell'end-effector
-%   phi  : orientamento theta1+theta2+theta3+theta4
-%   Tall : 4x4x5, terne T0..T4 (T0 = identita') per la visualizzazione
+% Cinematica diretta del 4R planare con DH standard (d = 0, alpha = 0, a_i = L_i)
+% T = A1*A2*A3*A4, phi = somma dei giunti, Tall = terne T0..T4 (4x4x5) per il disegno
 
 theta = theta(:);
 L = L(:);

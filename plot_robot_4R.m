@@ -1,7 +1,5 @@
 function plot_robot_4R(ax, theta, L, frameScale)
-% PLOT_ROBOT_4R  Disegna il robot 4R e le terne DH associate a ogni giunto.
-%   Terne: asse x_i (rosso) lungo il link i, asse y_i (verde) ortogonale,
-%   asse z_i uscente dal piano (cerchio con punto). Terna 0 alla base.
+% Disegna il robot 4R con le terne DH (x in rosso, y in verde), terna 0 alla base
 
 if nargin < 4, frameScale = 0.08; end
 [~, ~, ~, ~, Tall] = fk_4R(theta, L);

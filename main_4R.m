@@ -1,14 +1,13 @@
-%% PROGETTO: Robot manipolatore planare 4R con gravita'
-% Script principale: FK, IK, dinamica, controllore a coppia calcolata,
-% simulazione con ode45, grafici e animazione.
+%% Robot planare 4R con gravita'
+% FK, IK, dinamica, controllo a coppia calcolata e simulazione con ode45
 clear; clc; close all;
 
 %% Parametri del robot
-params.L  = [0.5 0.4 0.3 0.2];          % lunghezze link [m]
-params.m  = [2.0 1.5 1.0 0.5];          % masse [kg]
-params.lc = params.L / 2;               % baricentri a meta' link
+params.L  = [0.5 0.4 0.3 0.2];              % lunghezze link [m]
+params.m  = [2.0 1.5 1.0 0.5];              % masse [kg]
+params.lc = params.L / 2;                   % baricentri a meta' link
 params.I  = params.m .* params.L.^2 / 12;   % inerzie baricentriche [kg m^2]
-params.g  = 9.81;                       % gravita' lungo -y [m/s^2]
+params.g  = 9.81;                           % gravita' lungo -y [m/s^2]
 L = params.L;
 
 %% 1) Cinematica diretta
@@ -17,7 +16,7 @@ theta_test = deg2rad([30 -40 25 15]);
 disp('T = A1*A2*A3*A4 ='); disp(T);
 fprintf('FK: x = %.4f, y = %.4f, phi = %.4f rad\n\n', x, y, phi);
 assert(abs(phi - sum(theta_test)) < 1e-12, 'phi deve essere la somma dei giunti');
-assert(norm(T(1:3, 1:3)' * T(1:3, 1:3) - eye(3)) < 1e-12, 'La parte rotazionale di T non e'' ortogonale');
+assert(norm(T(1:3,1:3)' * T(1:3,1:3) - eye(3)) < 1e-12, 'R non ortogonale');
 
 figure('Name', 'Cinematica diretta');
 plot_robot_4R(gca, theta_test, L);
@@ -37,27 +36,30 @@ for el = [1 -1]
         el, num2str(rad2deg(th'), '%8.2f'), err);
     subplot(1, 2, (el == -1) + 1);
     plot_robot_4R(gca, th, L);
-    title(sprintf('Gomito %s', ternary(el == 1, 'basso', 'alto')));
+    if el == 1
+        title('Gomito basso');
+    else
+        title('Gomito alto');
+    end
 end
 fprintf('\n');
 
-% Un punto fuori dallo spazio di lavoro deve generare un errore esplicito
+% Un punto fuori dallo spazio di lavoro deve dare errore
 try
     ik_4R(sum(L) + 1, 0, 0, L);
-    error('Test irraggiungibilita'' fallito: nessun errore sollevato');
+    error('Nessun errore sollevato per punto irraggiungibile');
 catch ME
     assert(strcmp(ME.identifier, 'ik_4R:Unreachable'), 'Errore inatteso: %s', ME.message);
     disp('Test punto irraggiungibile superato.');
 end
 
-%% 3) Test della dinamica: conservazione dell'energia (moto libero senza gravita' attiva sui giunti)
+%% 3) Test della dinamica: conservazione dell'energia in moto libero
 [Mt, Ct, Gt] = dynamics_4R(deg2rad([20 -30 40 -10])', [0.3; -0.2; 0.5; 0.1], params);
 assert(norm(Mt - Mt') < 1e-12 && all(eig(Mt) > 0), 'M deve essere simmetrica definita positiva');
 assert(all(isfinite([Mt(:); Ct(:); Gt(:)])), 'M, C, G contengono NaN o Inf');
 
 x0 = [deg2rad([20 -30 40 -10])'; 0; 0; 0; 0];
-free = @(~, s) [s(5:8); ...
-    local_acc(s(1:4), s(5:8), zeros(4, 1), params)];
+free = @(~, s) [s(5:8); local_acc(s(1:4), s(5:8), zeros(4, 1), params)];
 [tt, ss] = ode45(free, [0 3], x0, odeset('RelTol', 1e-10, 'AbsTol', 1e-12));
 E = zeros(numel(tt), 1);
 for k = 1:numel(tt)
@@ -120,7 +122,7 @@ fprintf('Controllore: errore finale ||e|| = %.2e rad, errore max dopo 2 s = %.2e
 fprintf('Picchi delle coppie [N m]: %s\n', num2str(max(abs(tau), [], 2)', '%8.2f'));
 assert(max(vecnorm(e(:, t > 2))) < 1e-2, 'Il controllore non converge sulla traiettoria');
 
-% Riepilogo da copiare nel README
+% Riepilogo per il README
 fprintf('\n===== RIEPILOGO VALIDAZIONE =====\n');
 fprintf('Versione MATLAB: %s\n', version);
 fprintf('Errore FK(IK(p)) gomito basso / alto: %.3e / %.3e\n', err_ik(1), err_ik(2));
@@ -164,28 +166,15 @@ reach = sum(L) * 1.05;
 step = 3;
 for k = 1:step:numel(t)
     cla(ax);
-    plot(ax, pos_d(1, :), pos_d(2, :), 'k--', 'LineWidth', 1);     % target
+    plot(ax, pos_d(1, :), pos_d(2, :), 'k--', 'LineWidth', 1);
     hold(ax, 'on');
     plot(ax, pos_d(1, k), pos_d(2, k), 'rx', 'MarkerSize', 12, 'LineWidth', 2);
-    plot(ax, pos(1, 1:k), pos(2, 1:k), 'm', 'LineWidth', 1.2);    % scia
+    plot(ax, pos(1, 1:k), pos(2, 1:k), 'm', 'LineWidth', 1.2);
     plot_robot_4R(ax, q(:, k), L);
     axis(ax, [-0.3 reach -0.3 reach]);
     title(ax, sprintf('t = %.2f s', t(k)));
     drawnow;
 end
-
-%if ~exist('results', 'dir'), mkdir('results'); end
-
-%% 8) Salvataggio delle figure in results/
-%nomi = {'Cinematica diretta', 'Cinematica inversa', 'Test energia', ...
-%        'Risultati controllo', 'Animazione'};
-%file = {'cinematica_diretta', 'cinematica_inversa', 'test_energia', ...
-%        'risultati_controllo', 'animazione_fine'};
-%for i = 1:numel(nomi)
-%    f = findobj('Type', 'figure', 'Name', nomi{i});
-%    exportgraphics(f(1), fullfile('results', [file{i} '.png']), 'Resolution', 150);
-%end
-%fprintf('Figure salvate nella cartella results/\n');
 
 %% Funzioni locali
 function tau = control_law(t, q, dq, qd_f, dqd_f, ddqd_f, Kp, Kd, params)
@@ -213,8 +202,4 @@ end
 function ppd = ppder(pp)
 [b, c, l, k, d] = unmkpp(pp);
 ppd = mkpp(b, repmat(k-1:-1:1, d*l, 1) .* c(:, 1:k-1), d);
-end
-
-function r = ternary(c, a, b)
-if c, r = a; else, r = b; end
 end

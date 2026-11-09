@@ -1,16 +1,7 @@
 function [M, C, G] = dynamics_4R(theta, dtheta, params)
-% DYNAMICS_4R  Termini dinamici M(q), C(q,dq), G(q) del 4R planare con gravita'.
-%
-% Equazione: M(q) ddq + C(q,dq) dq + G(q) = tau
-%
-% params: L(4) lunghezze, m(4) masse, lc(4) distanza baricentro dal giunto
-%         i-esimo, I(4) inerzie baricentriche, g gravita' (lungo -y).
-%
-% Calcolo esatto tramite Jacobiani dei baricentri:
-%   M = sum_i  m_i Jv_i' Jv_i + I_i Jw_i' Jw_i
-%   G = sum_i  m_i g Jv_i(2,:)'
-%   C(k,j) = sum_m 1/2 (dM_kj/dq_m + dM_km/dq_j - dM_jm/dq_k) dq_m  (Christoffel)
-% E' verificata contro la derivazione simbolica in derive_dynamics_symbolic.m.
+% Termini dinamici del 4R planare: M(q) ddq + C(q,dq) dq + G(q) = tau
+% M e G si ottengono dai Jacobiani dei baricentri, C dai simboli di Christoffel.
+% Il risultato e' confrontato con derive_dynamics_symbolic.m
 
 n = 4;
 theta = theta(:);

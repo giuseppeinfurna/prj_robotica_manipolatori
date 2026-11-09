@@ -1,6 +1,5 @@
-%% DERIVE_DYNAMICS_SYMBOLIC  Derivazione simbolica Eulero-Lagrange del 4R planare
-% Richiede Symbolic Math Toolbox. Ricava M(q), C(q,dq), G(q) e li confronta
-% numericamente con dynamics_4R.
+%% Derivazione simbolica Eulero-Lagrange del 4R planare
+% Serve il Symbolic Math Toolbox. Ricava M, C, G e li confronta con dynamics_4R.
 clear; clc;
 
 n = 4;
@@ -22,7 +21,7 @@ for i = 1:n
     pj = pj + L(i) * u;
 end
 
-%% Energia cinetica T = 1/2 dq' M dq  ->  M(q)
+%% Energia cinetica -> M(q)
 M = sym(zeros(n));
 for i = 1:n
     Jv = jacobian(pc(:, i), q);
@@ -31,11 +30,11 @@ for i = 1:n
 end
 M = simplify(M);
 
-%% Energia potenziale V = sum m_i g h_i  ->  G(q)
+%% Energia potenziale -> G(q)
 V = sum(m .* g .* pc(2, :).');
 G = simplify(gradient(V, q));
 
-%% Coriolis / centrifughi (simboli di Christoffel)
+%% Coriolis e centrifughi (Christoffel)
 C = sym(zeros(n));
 for k = 1:n
     for j = 1:n
