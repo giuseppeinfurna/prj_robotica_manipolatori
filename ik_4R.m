@@ -16,7 +16,7 @@ function theta = ik_4R(x, y, phi, L, opts)
 %   4) problema 2R per theta1, theta2 (legge dei coseni, 2 soluzioni)
 %   5) theta3 = phi3 - theta1 - theta2,   theta4 = phi - (theta1+theta2+theta3)
 %
-% Se il punto non e' raggiungibile ritorna NaN(4,1).
+% Se il punto non e' raggiungibile solleva l'errore 'ik_4R:Unreachable'.
 
 if nargin < 5, opts = struct(); end
 if ~isfield(opts, 'theta4'), opts.theta4 = 0.3; end
@@ -33,8 +33,8 @@ y2 = yw - L3*sin(phi3);
 
 c2 = (x2^2 + y2^2 - L1^2 - L2^2) / (2*L1*L2);
 if abs(c2) > 1
-    theta = NaN(4, 1);
-    return
+    error('ik_4R:Unreachable', ...
+        'Punto (%.3f, %.3f, phi = %.3f) fuori dallo spazio di lavoro raggiungibile.', x, y, phi);
 end
 
 s2 = opts.elbow * sqrt(1 - c2^2);

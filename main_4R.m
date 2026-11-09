@@ -16,6 +16,8 @@ theta_test = deg2rad([30 -40 25 15]);
 [T, x, y, phi] = fk_4R(theta_test, L);
 disp('T = A1*A2*A3*A4 ='); disp(T);
 fprintf('FK: x = %.4f, y = %.4f, phi = %.4f rad\n\n', x, y, phi);
+assert(abs(phi - sum(theta_test)) < 1e-12, 'phi deve essere la somma dei giunti');
+assert(norm(T(1:3, 1:3)' * T(1:3, 1:3) - eye(3)) < 1e-12, 'La parte rotazionale di T non e'' ortogonale');
 
 figure('Name', 'Cinematica diretta');
 plot_robot_4R(gca, theta_test, L);
@@ -23,11 +25,14 @@ title('Robot 4R e terne DH (configurazione di test)');
 
 %% 2) Cinematica inversa: FK(IK(p)) = p, gomito basso e alto
 figure('Name', 'Cinematica inversa'); hold on;
+err_ik = [];
 for el = [1 -1]
     opts = struct('elbow', el, 'theta4', theta_test(4));
     th = ik_4R(x, y, phi, L, opts);
     [~, xc, yc, phic] = fk_4R(th, L);
     err = norm([x - xc, y - yc, phi - phic]);
+    assert(err < 1e-10, 'FK(IK(p)) diverso da p (gomito %d)', el);
+    err_ik(end+1) = err;
     fprintf('IK elbow = %+d: theta = [%s] deg, errore FK(IK(p)) = %.2e\n', ...
         el, num2str(rad2deg(th'), '%8.2f'), err);
     subplot(1, 2, (el == -1) + 1);
@@ -36,7 +41,20 @@ for el = [1 -1]
 end
 fprintf('\n');
 
+% Un punto fuori dallo spazio di lavoro deve generare un errore esplicito
+try
+    ik_4R(sum(L) + 1, 0, 0, L);
+    error('Test irraggiungibilita'' fallito: nessun errore sollevato');
+catch ME
+    assert(strcmp(ME.identifier, 'ik_4R:Unreachable'), 'Errore inatteso: %s', ME.message);
+    disp('Test punto irraggiungibile superato.');
+end
+
 %% 3) Test della dinamica: conservazione dell'energia (moto libero senza gravita' attiva sui giunti)
+[Mt, Ct, Gt] = dynamics_4R(deg2rad([20 -30 40 -10])', [0.3; -0.2; 0.5; 0.1], params);
+assert(norm(Mt - Mt') < 1e-12 && all(eig(Mt) > 0), 'M deve essere simmetrica definita positiva');
+assert(all(isfinite([Mt(:); Ct(:); Gt(:)])), 'M, C, G contengono NaN o Inf');
+
 x0 = [deg2rad([20 -30 40 -10])'; 0; 0; 0; 0];
 free = @(~, s) [s(5:8); ...
     local_acc(s(1:4), s(5:8), zeros(4, 1), params)];
@@ -47,6 +65,7 @@ for k = 1:numel(tt)
     E(k) = 0.5 * ss(k, 5:8) * Mk * ss(k, 5:8)' + potential_energy(ss(k, 1:4)', params);
 end
 fprintf('Test energia: variazione massima = %.2e J (E0 = %.4f J)\n\n', max(abs(E - E(1))), E(1));
+assert(max(abs(E - E(1))) < 1e-6, 'L''energia non si conserva: modello dinamico errato');
 figure('Name', 'Test energia');
 plot(tt, E - E(1)); grid on; xlabel('t [s]'); ylabel('E - E_0 [J]');
 title('Conservazione dell''energia (moto libero)');
@@ -62,9 +81,6 @@ opts = struct('elbow', elbow, 'theta4', 0.3);
 qref = zeros(4, numel(tg));
 for k = 1:numel(tg)
     qref(:, k) = ik_4R(xc0 + R*cos(w*tg(k)), yc0 + R*sin(w*tg(k)), phi_d, L, opts);
-end
-if any(isnan(qref(:)))
-    error('Traiettoria fuori dallo spazio di lavoro raggiungibile.');
 end
 qref = unwrap(qref, [], 2);
 
@@ -101,6 +117,20 @@ for k = 1:numel(t)
 end
 fprintf('Controllore: errore finale ||e|| = %.2e rad, errore max dopo 2 s = %.2e rad\n', ...
     norm(e(:, end)), max(vecnorm(e(:, t > 2))));
+fprintf('Picchi delle coppie [N m]: %s\n', num2str(max(abs(tau), [], 2)', '%8.2f'));
+assert(max(vecnorm(e(:, t > 2))) < 1e-2, 'Il controllore non converge sulla traiettoria');
+
+% Riepilogo da copiare nel README
+fprintf('\n===== RIEPILOGO VALIDAZIONE =====\n');
+fprintf('Versione MATLAB: %s\n', version);
+fprintf('Errore FK(IK(p)) gomito basso / alto: %.3e / %.3e\n', err_ik(1), err_ik(2));
+fprintf('Energia, variazione massima in moto libero: %.3e J\n', max(abs(E - E(1))));
+fprintf('Errore di giunto iniziale ||e||: %.3e rad\n', norm(e(:, 1)));
+fprintf('Errore di giunto massimo dopo 2 s: %.3e rad\n', max(vecnorm(e(:, t > 2))));
+fprintf('Errore di giunto finale ||e||: %.3e rad\n', norm(e(:, end)));
+fprintf('Errore finale end-effector: %.3e m\n', norm(pos(:, end) - pos_d(:, end)));
+fprintf('Picchi delle coppie [N m]: %s\n', num2str(max(abs(tau), [], 2)', '%8.2f'));
+fprintf('=================================\n\n');
 
 %% 6) Grafici
 lbl = {'1', '2', '3', '4'};
@@ -125,6 +155,10 @@ plot(pos_d(1, :), pos_d(2, :), 'k--', 'LineWidth', 1.5); hold on;
 plot(pos(1, :), pos(2, :), 'm', 'LineWidth', 1.2);
 axis equal; grid on; xlabel('x [m]'); ylabel('y [m]');
 title('Traiettoria end-effector'); legend('desiderata', 'effettiva');
+
+% Salva la figura dei risultati (usata dal README)
+if ~exist('results', 'dir'), mkdir('results'); end
+exportgraphics(gcf, fullfile('results', 'risultati_controllo.png'), 'Resolution', 150);
 
 %% 7) Animazione
 fig = figure('Name', 'Animazione', 'Position', [150 150 700 650]);

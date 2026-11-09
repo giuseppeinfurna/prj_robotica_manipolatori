@@ -62,6 +62,7 @@ vars = [q; dq; L; lc; m; I; g];
 vals = [rnd(); rnd(); 0.5*ones(n,1)+rnd()*0.1; 0.2*ones(n,1); 1+rnd(); 0.05*ones(n,1); 9.81];
 Nn = double(subs(N, vars, vals));
 fprintf('||N + N''|| (antisimmetria) = %.2e\n', norm(Nn + Nn'));
+assert(norm(Nn + Nn') < 1e-8, 'Mdot - 2C non e'' antisimmetrica');
 
 %% Confronto numerico con dynamics_4R
 params.L  = [0.5 0.4 0.3 0.2];
@@ -82,5 +83,5 @@ Gs = double(subs(G, vars, vals));
 fprintf('Errore M: %.2e\n', norm(Ms - Mn));
 fprintf('Errore C: %.2e\n', norm(Cs - Cn));
 fprintf('Errore G: %.2e\n', norm(Gs - Gn));
-
-save('dynamics_symbolic.mat', 'M', 'C', 'G');
+assert(max([norm(Ms - Mn), norm(Cs - Cn), norm(Gs - Gn)]) < 1e-8, ...
+    'Il modello numerico non coincide con la derivazione simbolica');
